@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
@@ -5,20 +6,41 @@ import { toDoState } from "./atoms";
 import Board from "./Components/Board";
 
 const Wrapper = styled.div`
-  width: 100vw;
-  height: 100vh;
   display: flex;
   margin: 0 auto;
   justify-content: center;
   align-items: center;
+  padding: 50px;
 `;
 
 const Boards = styled.div`
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  flex-wrap: wrap;
   width: 100%;
   gap: 10px;
+  margin-top: 100px;
+`;
+
+const AddForm = styled.form`
+  width: 100%;
+  position: fixed;
+  display: flex;
+  justify-content: center;
+  padding: 50px 0;
+  background-color: #3f8cf3;
+  input {
+    width: 80%;
+    max-width: 300px;
+    font-size: 16px;
+    border: 0;
+    background-color: white;
+    padding: 15px 10px;
+    border-radius: 5px;
+    text-align: center;
+    margin: 0 auto;
+  }
 `;
 
 function App() {
@@ -56,8 +78,32 @@ function App() {
     }
   };
 
+  // 새로운 보드 추가
+  const [value, setValue] = useState<string>("");
+  const onChange = (event: React.FormEvent<HTMLInputElement>) => {
+    const {
+      currentTarget: { value },
+    } = event;
+    setValue(value);
+  };
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setToDos((allBoards) => {
+      return { ...allBoards, [value]: [] };
+    });
+    setValue("");
+  };
+
   return (
     <DragDropContext onDragEnd={onDragEnd}>
+      <AddForm onSubmit={onSubmit}>
+        <input
+          value={value}
+          onChange={onChange}
+          type="text"
+          placeholder="Add New Board"
+        />
+      </AddForm>
       <Wrapper>
         <Boards>
           {Object.keys(toDos).map((boardId) => (

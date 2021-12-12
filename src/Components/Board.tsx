@@ -3,7 +3,7 @@ import { Droppable } from "react-beautiful-dnd";
 import styled from "styled-components";
 import DragabbleCard from "./DragabbleCard";
 import { ITodo, toDoState } from "../atoms";
-import { useSetRecoilState } from "recoil";
+import { useRecoilState } from "recoil";
 
 const Wrapper = styled.div`
   width: 300px;
@@ -14,6 +14,7 @@ const Wrapper = styled.div`
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 `;
 
 const Title = styled.h2`
@@ -57,6 +58,14 @@ const Form = styled.form`
   }
 `;
 
+const DeleteBtn = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background-color: transparent;
+`;
+
 interface IBoardProps {
   toDos: ITodo[];
   boardId: string;
@@ -67,7 +76,7 @@ interface IForm {
 }
 
 function Board({ toDos, boardId }: IBoardProps) {
-  const setToDos = useSetRecoilState(toDoState);
+  const [recoilToDos, setToDos] = useRecoilState(toDoState);
   const { register, setValue, handleSubmit } = useForm<IForm>();
   const onValid = ({ toDo }: IForm) => {
     const newToDo = {
@@ -82,6 +91,13 @@ function Board({ toDos, boardId }: IBoardProps) {
     });
     setValue("toDo", "");
   };
+
+  const onDeleteBoard = (boardId: string) => {
+    const x = { ...recoilToDos };
+    delete x[boardId];
+    setToDos(x);
+  };
+
   return (
     <Wrapper>
       <Title>{boardId}</Title>
@@ -100,12 +116,20 @@ function Board({ toDos, boardId }: IBoardProps) {
             ref={magic.innerRef}
             {...magic.droppableProps}
           >
+            <DeleteBtn
+              onClick={() => {
+                onDeleteBoard(boardId);
+              }}
+            >
+              <i className="fas fa-times"></i>
+            </DeleteBtn>
             {toDos.map((toDo, index) => (
               <DragabbleCard
                 key={toDo.id}
                 index={index}
                 toDoId={toDo.id}
                 toDoText={toDo.text}
+                boardId={boardId}
               />
             ))}
             {magic.placeholder}

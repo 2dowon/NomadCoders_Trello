@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import { DragDropContext, DropResult, Droppable } from "react-beautiful-dnd";
 import { useRecoilState } from "recoil";
 import styled from "styled-components";
 import { toDoState } from "./atoms";
@@ -43,11 +43,47 @@ const AddForm = styled.form`
   }
 `;
 
+interface IDeleteBtnProps {
+  isDraggingOver: boolean;
+}
+
+const DeleteBtn = styled.div<IDeleteBtnProps>`
+  width: 70px;
+  height: 70px;
+  font-size: 30px;
+  color: ${(props) => (props.isDraggingOver ? "red" : "white")};
+  border: ${(props) =>
+    props.isDraggingOver ? "2px solid red" : "2px solid white"};
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transition: transform 100ms ease-in;
+  transform: ${(props) =>
+    props.isDraggingOver
+      ? "scale(1.1) translate(-50%, -50%)"
+      : "translate(-50%, -50%)"};
+`;
+
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
   const onDragEnd = (info: DropResult) => {
     const { destination, source } = info;
     if (!destination) return;
+    if (destination.droppableId === "deleteBtn") {
+      setToDos((allBoards) => {
+        const boardCopy = [...allBoards[source.droppableId]];
+        boardCopy.splice(source.index, 1);
+        return {
+          ...allBoards,
+          [source.droppableId]: boardCopy,
+        };
+      });
+      return;
+    }
     if (destination?.droppableId === source.droppableId) {
       // same board movement.
       setToDos((allBoards) => {
@@ -111,6 +147,17 @@ function App() {
           ))}
         </Boards>
       </Wrapper>
+      <Droppable droppableId="deleteBtn">
+        {(magic, snapshot) => (
+          <DeleteBtn
+            isDraggingOver={snapshot.isDraggingOver}
+            ref={magic.innerRef}
+            {...magic.droppableProps}
+          >
+            <i className="fas fa-trash"></i>
+          </DeleteBtn>
+        )}
+      </Droppable>
     </DragDropContext>
   );
 }

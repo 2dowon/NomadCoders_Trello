@@ -13,7 +13,7 @@ const Wrapper = styled.div`
   padding: 50px;
 `;
 
-const Boards = styled.div`
+const Boards = styled.div<{ isDraggingOver: boolean }>`
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -71,46 +71,60 @@ const DeleteBtn = styled.div<IDeleteBtnProps>`
 function App() {
   const [toDos, setToDos] = useRecoilState(toDoState);
   const onDragEnd = (info: DropResult) => {
-    const { destination, source } = info;
+    const { destination, source, draggableId } = info;
+    console.log(destination, source, draggableId);
     if (!destination) return;
     if (destination.droppableId === "deleteBtn") {
-      setToDos((allBoards) => {
-        const boardCopy = [...allBoards[source.droppableId]];
-        boardCopy.splice(source.index, 1);
-        return {
-          ...allBoards,
-          [source.droppableId]: boardCopy,
-        };
-      });
-      return;
+      if (source.droppableId !== "boards") {
+        setToDos((allBoards) => {
+          const boardCopy = [...allBoards[source.droppableId]];
+          boardCopy.splice(source.index, 1);
+          return {
+            ...allBoards,
+            [source.droppableId]: boardCopy,
+          };
+        });
+        return;
+      } else {
+        const boardsCopy = { ...toDos };
+        delete boardsCopy[draggableId];
+        setToDos(boardsCopy);
+        return;
+      }
     }
-    if (destination?.droppableId === source.droppableId) {
-      // same board movement.
-      setToDos((allBoards) => {
-        const boardCopy = [...allBoards[source.droppableId]];
-        const taskObj = boardCopy[source.index];
-        boardCopy.splice(source.index, 1);
-        boardCopy.splice(destination?.index, 0, taskObj);
-        return {
-          ...allBoards,
-          [source.droppableId]: boardCopy,
-        };
-      });
-    }
-    if (destination.droppableId !== source.droppableId) {
-      // cross board movement
-      setToDos((allBoards) => {
-        const sourceBoard = [...allBoards[source.droppableId]];
-        const taskObj = sourceBoard[source.index];
-        const destinationBoard = [...allBoards[destination.droppableId]];
-        sourceBoard.splice(source.index, 1);
-        destinationBoard.splice(destination?.index, 0, taskObj);
-        return {
-          ...allBoards,
-          [source.droppableId]: sourceBoard,
-          [destination.droppableId]: destinationBoard,
-        };
-      });
+
+    if (
+      source.droppableId !== "boards" &&
+      destination.droppableId !== "boards"
+    ) {
+      if (destination?.droppableId === source.droppableId) {
+        // same board movement.
+        setToDos((allBoards) => {
+          const boardCopy = [...allBoards[source.droppableId]];
+          const taskObj = boardCopy[source.index];
+          boardCopy.splice(source.index, 1);
+          boardCopy.splice(destination?.index, 0, taskObj);
+          return {
+            ...allBoards,
+            [source.droppableId]: boardCopy,
+          };
+        });
+      }
+      if (destination.droppableId !== source.droppableId) {
+        // cross board movement
+        setToDos((allBoards) => {
+          const sourceBoard = [...allBoards[source.droppableId]];
+          const taskObj = sourceBoard[source.index];
+          const destinationBoard = [...allBoards[destination.droppableId]];
+          sourceBoard.splice(source.index, 1);
+          destinationBoard.splice(destination?.index, 0, taskObj);
+          return {
+            ...allBoards,
+            [source.droppableId]: sourceBoard,
+            [destination.droppableId]: destinationBoard,
+          };
+        });
+      }
     }
   };
 
@@ -141,11 +155,24 @@ function App() {
         />
       </AddForm>
       <Wrapper>
-        <Boards>
-          {Object.keys(toDos).map((boardId) => (
-            <Board boardId={boardId} key={boardId} toDos={toDos[boardId]} />
-          ))}
-        </Boards>
+        <Droppable droppableId="boards">
+          {(magic, snapshot) => (
+            <Boards
+              isDraggingOver={snapshot.isDraggingOver}
+              ref={magic.innerRef}
+              {...magic.droppableProps}
+            >
+              {Object.keys(toDos).map((boardId, index) => (
+                <Board
+                  boardId={boardId}
+                  key={boardId}
+                  toDos={toDos[boardId]}
+                  index={index}
+                />
+              ))}
+            </Boards>
+          )}
+        </Droppable>
       </Wrapper>
       <Droppable droppableId="deleteBtn">
         {(magic, snapshot) => (
